@@ -4,7 +4,7 @@
 
 Тренируйся отвечать на острые вопросы от 4 типов инвесторов — а Claude AI играет роль инвестора и реагирует на каждый твой ответ.
 
-🔗 **[Открыть симулятор →](https://wertikooo-web.github.io/voicebridge-pitch)**
+🔗 **[Открыть симулятор →]([https://wertikooo-web.github.io/voicebridge-pitch])**
 
 ---
 
