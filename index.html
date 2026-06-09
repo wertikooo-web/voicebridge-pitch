@@ -194,7 +194,7 @@ function selInv(i,el){
   document.getElementById('ic-bio').textContent=v.bio;
   renderQs();hist=[];
   document.getElementById('chat').innerHTML='<div class="intro"><h2>'+v.name.split(' ')[0]+'</h2><p style="font-style:italic">'+v.role+'</p></div>';
-  setTimeout(()=>addInv(v.open),500);
+  setTimeout(()=>addInv(v.open, false),500);
 }
 
 function renderQs(){
@@ -203,23 +203,25 @@ function renderQs(){
   INVS[cur].qs.forEach(q=>{
     const btn=document.createElement('button');
     btn.className='qbtn';btn.textContent=q;
-    btn.onclick=()=>{if(!loading){addInv(q);setQs(true);}};
+    btn.onclick=()=>{if(!loading){addInv(q, true);}};
     b.appendChild(btn);
   });
 }
 
-function addInv(text){
+function addInv(text, addToHist=true){
   const v=INVS[cur],c=document.getElementById('chat');
   const d=document.createElement('div');d.className='msg';
   d.innerHTML='<div class="mh"><div class="mava">'+v.emoji+'</div><div class="mname">'+v.name.split(' ')[0]+'</div></div><div class="bubble inv">'+esc(text)+'</div>';
-  c.appendChild(d);hist.push({role:'user',content:text});scroll();setQs(true);
+  c.appendChild(d);
+  if(addToHist) hist.push({role:'assistant',content:text});
+  scroll();
 }
 
 function addFounder(text){
   const c=document.getElementById('chat');
   const d=document.createElement('div');d.className='msg';d.style.alignItems='flex-end';
   d.innerHTML='<div class="mh" style="flex-direction:row-reverse"><div class="mname">Фаундер</div><div class="mava">🚀</div></div><div class="bubble founder">'+esc(text)+'</div>';
-  c.appendChild(d);hist.push({role:'assistant',content:text});scroll();updScore(text);setQs(false);
+  c.appendChild(d);hist.push({role:'user',content:text});scroll();updScore(text);
 }
 
 function onKey(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send();}}
@@ -252,7 +254,7 @@ async function askReply(){
     const data=await r.json();
     const reply=data.content?.[0]?.text||'Интересно. Продолжайте.';
     document.getElementById('typing')?.remove();
-    addInv(reply);
+    addInv(reply, true);
   }catch(e){
     document.getElementById('typing')?.remove();
     addInv('Ошибка соединения. Проверьте API ключ и попробуйте снова.');
@@ -282,6 +284,7 @@ function setLoad(v){
   document.getElementById('sbtn').disabled=v;
   document.getElementById('spin').style.display=v?'block':'none';
   document.getElementById('slbl').textContent=v?'ДУМАЕТ...':'ОТПРАВИТЬ';
+  setQs(v);
 }
 function setQs(v){document.querySelectorAll('.qbtn').forEach(b=>b.disabled=v);}
 function scroll(){const c=document.getElementById('chat');setTimeout(()=>c.scrollTo({top:c.scrollHeight,behavior:'smooth'}),50);}
@@ -318,7 +321,7 @@ function saveKey(){
   document.getElementById('ks').remove();
   init();
 }
-function init(){renderQs();setTimeout(()=>addInv(INVS[0].open),600);}
+function init(){renderQs();setQs(false);setTimeout(()=>addInv(INVS[0].open, false),600);}
 
 if(!localStorage.getItem('vb_key'))showKey();else init();
 </script>
