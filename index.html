@@ -4,968 +4,323 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>VoiceBridge · Pitch Simulator</title>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300&family=JetBrains+Mono:wght@300;400&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-* { box-sizing: border-box; margin: 0; padding: 0; }
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#ffffff;color:#111111;font-family:'Inter',sans-serif;font-size:16px;min-height:100vh}
+.app{display:grid;grid-template-columns:260px 1fr;grid-template-rows:64px 1fr auto;min-height:100vh;max-width:1200px;margin:0 auto;border:2px solid #111111}
 
-:root {
-  --gold: #7c4d0f;
-  --gold-dim: rgba(124,77,15,0.12);
-  --gold-glow: rgba(124,77,15,0.06);
-  --cream: #2a1f0e;
-  --ink: #faf6f0;
-  --ink2: #f0e8d8;
-  --text: #1a1208;
-  --text-dim: rgba(26,18,8,0.55);
-  --red: #e05555;
-  --green: #166534;
-}
+/* HEADER */
+header{grid-column:1/-1;background:#111111;color:#ffffff;display:flex;align-items:center;justify-content:space-between;padding:0 28px;border-bottom:2px solid #111111}
+.logo{font-size:14px;font-weight:700;letter-spacing:4px;text-transform:uppercase;color:#ffffff}
+.logo span{color:#aaaaaa;font-weight:400}
+.session{font-family:'JetBrains Mono',monospace;font-size:12px;color:#aaaaaa;display:flex;align-items:center;gap:8px}
+.sdot{width:8px;height:8px;border-radius:50%;background:#22cc66}
 
-html, body {
-  min-height: 100vh;
-  background: #ffffff;
-  color: #111111;
-  font-family: 'Cormorant Garamond', Georgia, serif;
-  overflow-x: hidden;
-}
+/* SIDEBAR */
+aside{background:#f8f8f8;border-right:2px solid #111111;padding:20px;display:flex;flex-direction:column;gap:16px;overflow-y:auto}
+.sec-title{font-size:11px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:#666666;margin-bottom:4px}
 
-/* Noise texture overlay */
-body::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
-  pointer-events: none;
-  z-index: 0;
-  opacity: 0.4;
-}
+.inv-btn{display:flex;align-items:center;gap:12px;padding:12px;border:2px solid transparent;border-radius:4px;cursor:pointer;background:transparent;text-align:left;width:100%;transition:all 0.15s}
+.inv-btn:hover{background:#eeeeee;border-color:#aaaaaa}
+.inv-btn.active{background:#111111;border-color:#111111}
+.inv-btn.active .inv-name{color:#ffffff}
+.inv-btn.active .inv-sub{color:#aaaaaa}
+.inv-ico{font-size:20px;flex-shrink:0}
+.inv-name{font-size:15px;font-weight:600;color:#111111;display:block}
+.inv-sub{font-size:12px;color:#666666;display:block;margin-top:2px;font-family:'JetBrains Mono',monospace}
 
-@keyframes fadeInUp {
-  from { opacity: 0; transform: translateY(12px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
-@keyframes pulse-gold {
-  0%,100% { box-shadow: 0 0 0 0 rgba(201,168,76,0); }
-  50%     { box-shadow: 0 0 20px 4px rgba(201,168,76,0.2); }
-}
-@keyframes spin { to { transform: rotate(360deg); } }
-@keyframes shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
-}
+.inv-card{background:#ffffff;border:2px solid #111111;border-radius:4px;padding:16px}
+.inv-card-ava{width:48px;height:48px;border-radius:50%;background:#eeeeee;border:2px solid #111111;display:flex;align-items:center;justify-content:center;font-size:20px;margin-bottom:12px}
+.inv-card-name{font-size:18px;font-weight:700;color:#111111;margin-bottom:4px}
+.inv-card-role{font-size:11px;font-weight:600;letter-spacing:2px;color:#666666;font-family:'JetBrains Mono',monospace;margin-bottom:12px}
+.inv-card-bio{font-size:14px;color:#333333;line-height:1.6;font-style:italic}
 
-/* ─── LAYOUT ─── */
-.app {
-  position: relative;
-  z-index: 1;
-  display: grid;
-  grid-template-columns: 280px 1fr;
-  grid-template-rows: auto 1fr auto;
-  min-height: 100vh;
-  max-width: 1100px;
-  margin: 0 auto;
-}
+.score-box{background:#ffffff;border:2px solid #111111;border-radius:4px;padding:16px}
+.score-row{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.score-lbl{font-size:13px;font-weight:500;color:#111111;min-width:100px}
+.score-track{flex:1;height:4px;background:#dddddd;border-radius:2px}
+.score-fill{height:4px;background:#111111;border-radius:2px;width:0%;transition:width 0.8s ease}
+.score-val{font-size:13px;font-weight:600;color:#111111;min-width:32px;text-align:right;font-family:'JetBrains Mono',monospace}
 
-/* ─── HEADER ─── */
-header {
-  grid-column: 1 / -1;
-  padding: 28px 40px 20px;
-  border-bottom: 1px solid rgba(139,94,26,0.2);
-  background: #ffffff;
-  border-bottom: 2px solid #111111;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-.logo {
-  font-size: 20px;
-  letter-spacing: 5px;
-  text-transform: uppercase;
-  color: #111111;
-}
-.logo span { color: #000000; }
-.session-info {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 15px;
-  color: #000000;
-  letter-spacing: 2px;
-  text-align: right;
-}
-.session-dot {
-  display: inline-block;
-  width: 6px; height: 6px;
-  border-radius: 50%;
-  background: var(--green);
-  margin-right: 6px;
-  animation: pulse-gold 2s infinite;
-}
+/* MAIN */
+main{display:flex;flex-direction:column;overflow:hidden;background:#ffffff}
+.chat{flex:1;overflow-y:auto;padding:24px 28px;display:flex;flex-direction:column;gap:16px;min-height:300px;max-height:420px}
 
-/* ─── SIDEBAR ─── */
-aside {
-  grid-row: 2;
-  padding: 28px 24px;
-  border-right: 2px solid #111111;
-  background: #f5f5f5;
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-}
+.msg{display:flex;flex-direction:column;gap:6px;animation:fadeIn 0.3s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.mh{display:flex;align-items:center;gap:8px}
+.mava{width:28px;height:28px;border-radius:50%;background:#eeeeee;border:2px solid #111111;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0}
+.mname{font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#666666}
 
-.investor-card {
-  background: #ffffff;
-  border: 1.5px solid #dddddd;
-  border-radius: 4px;
-  padding: 18px;
-  animation: fadeInUp 0.5s ease both;
-}
-.investor-avatar {
-  width: 52px; height: 52px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #e8dcc8, #d4c9b0);
-  border: 1px solid rgba(139,94,26,0.3);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 33px;
-  margin-bottom: 12px;
-}
-.investor-name {
-  font-size: 24px;
-  color: #111111;
-  margin-bottom: 2px;
-}
-.investor-role {
-  font-size: 16px;
-  color: #000000;
-  letter-spacing: 1px;
-  font-family: 'JetBrains Mono', monospace;
-  margin-bottom: 12px;
-}
-.investor-bio {
-  font-size: 18px;
-  color: #000000;
-  line-height: 1.6;
-  font-style: italic;
-  color: #000000;
-}
+.bubble{padding:14px 18px;border-radius:4px;font-size:16px;line-height:1.7;max-width:88%}
+.bubble.inv{background:#f5f5f5;border:2px solid #111111;border-left:5px solid #111111;color:#111111}
+.bubble.founder{background:#111111;border:2px solid #111111;color:#ffffff;align-self:flex-end}
 
-.investors-title {
-  font-size: 15px;
-  letter-spacing: 3px;
-  text-transform: uppercase;
-  color: #000000;
-  margin-bottom: 10px;
-}
+.typing{display:flex;gap:5px;padding:14px 18px;background:#f5f5f5;border:2px solid #111111;border-left:5px solid #111111;width:fit-content;border-radius:4px}
+.tdot{width:6px;height:6px;border-radius:50%;background:#111111;animation:blink 1.2s infinite}
+.tdot:nth-child(2){animation-delay:0.2s}.tdot:nth-child(3){animation-delay:0.4s}
+@keyframes blink{0%,80%,100%{opacity:0.2}40%{opacity:1}}
 
-.investor-option {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 12px;
-  border-radius: 3px;
-  cursor: pointer;
-  border: 1px solid transparent;
-  transition: all 0.2s;
-  margin-bottom: 6px;
-  animation: fadeInUp 0.5s ease both;
-}
-.investor-option:hover { background: #f0f0f0; border-color: #888888; }
-.investor-option.active { background: #111111; border-color: #111111; }
-.inv-emoji { font-size: 27px; }
-.inv-info { flex: 1; }
-.inv-name { font-size: 20px; color: #111111; font-weight:500; }
-.inv-style { font-size: 15px; color: #000000; font-family: 'JetBrains Mono', monospace; }
+/* QUESTIONS */
+.qs{padding:14px 28px;border-top:2px solid #111111;background:#f8f8f8;display:flex;flex-wrap:wrap;gap:8px}
+.ql{width:100%;font-size:11px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:#666666;margin-bottom:4px}
+.qbtn{padding:8px 14px;border:2px solid #111111;border-radius:4px;background:#ffffff;font-size:14px;font-weight:500;color:#111111;cursor:pointer;transition:all 0.15s;font-family:'Inter',sans-serif}
+.qbtn:hover{background:#111111;color:#ffffff}
+.qbtn:disabled{opacity:0.3;cursor:not-allowed}
 
-.score-box {
-  border: 1.5px solid #dddddd;
-  border-radius: 4px;
-  padding: 16px;
-  background: #ffffff;
-  animation: fadeInUp 0.6s 0.1s ease both;
-}
-.score-title {
-  font-size: 15px; letter-spacing: 3px;
-  text-transform: uppercase; color: #000000;
-  margin-bottom: 14px;
-}
-.score-row {
-  display: flex; justify-content: space-between;
-  align-items: center; margin-bottom: 10px;
-}
-.score-label { font-size: 18px; color: #000000; }
-.score-bar-wrap { width: 80px; height: 3px; background: #e0e0e0; border-radius: 2px; }
-.score-bar { height: 3px; border-radius: 2px; background: #111111; transition: width 0.8s ease; }
-.score-val { font-size: 16px; font-family: 'JetBrains Mono', monospace; color: #111111; min-width: 28px; text-align: right; }
+/* INPUT */
+footer{grid-column:2;padding:14px 20px;border-top:2px solid #111111;background:#f8f8f8;display:flex;gap:10px;align-items:center}
+.mic-btn{width:52px;height:52px;border-radius:50%;border:2px solid #111111;background:#ffffff;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;transition:all 0.2s}
+.mic-btn:hover{background:#eeeeee}
+.mic-btn.rec{background:#cc0000;border-color:#cc0000;animation:mpulse 1s infinite}
+@keyframes mpulse{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
+textarea{flex:1;border:2px solid #111111;border-radius:4px;background:#ffffff;color:#111111;font-family:'Inter',sans-serif;font-size:16px;font-weight:500;padding:12px 14px;resize:none;min-height:52px;max-height:120px;line-height:1.5}
+textarea:focus{outline:none;border-color:#555555}
+textarea::placeholder{color:#aaaaaa}
+textarea:disabled{opacity:0.4}
+.sbtn{padding:0 24px;height:52px;background:#111111;color:#ffffff;border:2px solid #111111;border-radius:4px;font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:600;letter-spacing:2px;cursor:pointer;white-space:nowrap;transition:all 0.15s;display:flex;align-items:center;gap:8px}
+.sbtn:hover{background:#333333}
+.sbtn:disabled{opacity:0.4;cursor:not-allowed}
+.spin{width:14px;height:14px;border:2px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;animation:spin 0.7s linear infinite;display:none}
+@keyframes spin{to{transform:rotate(360deg)}}
 
-/* ─── MAIN CHAT ─── */
-main {
-  grid-row: 2;
-  display: flex;
-  flex-direction: column;
-  padding: 0 0 0 0;
-  overflow: hidden;
-}
+/* INTRO */
+.intro{display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;text-align:center;padding:40px;gap:10px}
+.intro h2{font-size:28px;font-weight:700;color:#111111}
+.intro p{font-size:16px;color:#555555;max-width:380px;line-height:1.6}
 
-.chat-area {
-  flex: 1;
-  overflow-y: auto;
-  padding: 28px 36px;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  background: #ffffff;
-  scrollbar-width: thin;
-  scrollbar-color: #000000 transparent;
-}
+/* KEY SCREEN */
+#ks{position:fixed;inset:0;background:rgba(255,255,255,0.97);display:flex;align-items:center;justify-content:center;z-index:9999}
+.kb{background:#ffffff;border:3px solid #111111;border-radius:8px;padding:40px;max-width:440px;width:90%;text-align:center}
+.kb h2{font-size:24px;font-weight:700;color:#111111;margin-bottom:8px}
+.kb p{font-size:15px;color:#555555;line-height:1.6;margin-bottom:24px}
+.kb input{width:100%;padding:14px;border:2px solid #aaaaaa;border-radius:4px;font-size:15px;font-family:'JetBrains Mono',monospace;color:#111111;background:#f8f8f8;margin-bottom:10px}
+.kb input:focus{outline:none;border-color:#111111}
+.kb button{width:100%;padding:14px;background:#111111;color:#ffffff;border:none;border-radius:4px;font-size:15px;font-weight:700;cursor:pointer;letter-spacing:1px;margin-top:6px}
+.kb button:hover{background:#333333}
+.kb .hint{font-size:13px;color:#888888;margin-top:16px;line-height:1.6}
+.kb a{color:#111111;font-weight:600}
 
-.msg {
-  max-width: 82%;
-  animation: fadeInUp 0.4s ease both;
-}
-.msg.investor { align-self: flex-start; }
-.msg.founder  { align-self: flex-end; }
-
-.msg-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 8px;
-}
-.msg-avatar {
-  width: 28px; height: 28px;
-  border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 20px;
-  border: 1px solid rgba(139,94,26,0.25);
-  background: #eeeeee;
-  flex-shrink: 0;
-}
-.msg-name { font-size: 16px; letter-spacing: 1px; color: #000000; text-transform: uppercase; }
-
-.msg-bubble {
-  padding: 16px 20px;
-  border-radius: 2px;
-  line-height: 1.75;
-  font-size: 22px;
-}
-.msg.investor .msg-bubble {
-  background: #f5f5f5;
-  border: 1px solid #dddddd;
-  border-left: 4px solid #111111;
-  color: #111111;
-}
-.msg.founder .msg-bubble {
-  background: #1e2018;
-  border: 1px solid rgba(232,184,75,0.2);
-  border-right: 3px solid #e8b84b;
-  color: #111111;
-}
-
-.typing-indicator {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  padding: 16px 20px;
-  background: #f5f5f5;
-  border: 1px solid #dddddd;
-  border-left: 4px solid #111111;
-  border-radius: 2px;
-  width: fit-content;
-}
-.typing-dot {
-  width: 5px; height: 5px;
-  border-radius: 50%;
-  background: #111111;
-  animation: blink 1s 0.2s infinite;
-}
-.typing-dot:nth-child(2){ animation-delay:0.4s }
-.typing-dot:nth-child(3){ animation-delay:0.6s }
-
-.streaming-text { white-space: pre-wrap; }
-
-/* ─── SUGGESTED QUESTIONS ─── */
-.suggestions {
-  padding: 16px 36px;
-  border-top: 2px solid #111111;
-  background: #f5f5f5;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-.sug-label {
-  width: 100%;
-  font-size: 15px; letter-spacing: 2px;
-  color: #000000; text-transform: uppercase;
-  margin-bottom: 4px;
-}
-.sug-btn {
-  padding: 7px 14px;
-  border: 1.5px solid #aaaaaa;
-  background: #ffffff;
-  color: #000000;
-  font-family: 'Cormorant Garamond', serif;
-  font-size: 20px;
-  border-radius: 2px;
-  cursor: pointer;
-  transition: all 0.2s;
-  letter-spacing: 0.3px;
-}
-.sug-btn:hover {
-  background: #111111;
-  border-color: #111111;
-  color: #ffffff;
-}
-.sug-btn:disabled { opacity: 0.3; cursor: not-allowed; }
-
-footer {
-  grid-column: 2;
-  padding: 18px 36px 24px;
-  border-top: 2px solid #111111;
-  background: #f5f5f5;
-  display: flex;
-  gap: 12px;
-  align-items: flex-end;
-}
-.input-wrap { flex: 1; position: relative; }
-textarea {
-  width: 100%;
-  background: #ffffff;
-  border: 1.5px solid #dddddd;
-  border-radius: 3px;
-  color: #f0e8d8;
-  font-family: 'Cormorant Garamond', serif;
-  font-size: 22px;
-  padding: 14px 16px;
-  resize: none;
-  min-height: 52px;
-  max-height: 120px;
-  line-height: 1.5;
-  transition: border-color 0.2s;
-  overflow-y: auto;
-}
-textarea:focus { outline: none; border-color: #111111; }
-textarea::placeholder { color: #000000; font-style: italic; }
-textarea:disabled { opacity: 0.4; }
-
-.send-btn {
-  padding: 14px 24px;
-  background: #111111;
-  color: #ffffff;
-  border: none;
-  border-radius: 3px;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 16px;
-  letter-spacing: 2px;
-  cursor: pointer;
-  text-transform: uppercase;
-  transition: all 0.2s;
-  white-space: nowrap;
-  flex-shrink: 0;
-  height: 52px;
-  display: flex; align-items: center; gap: 8px;
-}
-.send-btn:hover { background: #000000; }
-.send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-
-.mic-btn {
-  width: 52px;
-  height: 52px;
-  border-radius: 50%;
-  border: 2px solid #111111;
-  background: #ffffff;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  transition: all 0.2s;
-  font-size: 22px;
-}
-.mic-btn:hover { background: #f0f0f0; }
-.mic-btn.recording {
-  background: #cc0000;
-  border-color: #cc0000;
-  animation: mic-pulse 1s ease-in-out infinite;
-}
-@keyframes mic-pulse {
-  0%,100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(204,0,0,0.4); }
-  50% { transform: scale(1.05); box-shadow: 0 0 0 8px rgba(204,0,0,0); }
-}
-
-.send-spinner {
-  width: 12px; height: 12px;
-  border: 2px solid rgba(255,255,255,0.3);
-  border-top-color: #fff;
-  border-radius: 50%;
-  animation: spin 0.7s linear infinite;
-  display: none;
-}
-
-/* ─── INTRO ─── */
-.intro-msg {
-  text-align: center;
-  padding: 40px 20px;
-  animation: fadeInUp 0.6s ease both;
-}
-.intro-title {
-  font-size: 48px;
-  color: var(--gold);
-  font-weight: 300;
-  margin-bottom: 12px;
-  font-style: italic;
-  color: #000000;
-}
-.intro-sub {
-  font-size: 21px;
-  color: #000000;
-  line-height: 1.7;
-  max-width: 400px;
-  margin: 0 auto;
-}
-
-/* ─── MOBILE ─── */
-@media (max-width: 700px) {
-  .app { grid-template-columns: 1fr; }
-  aside { display: none; }
-  header { padding: 20px; }
-  .chat-area { padding: 20px; }
-  footer { grid-column: 1; padding: 14px 20px 20px; }
-  .suggestions { padding: 12px 20px; }
+@media(max-width:700px){
+  .app{grid-template-columns:1fr}
+  aside{display:none}
+  footer{grid-column:1}
 }
 </style>
 </head>
 <body>
 <div class="app">
-
-  <!-- HEADER -->
   <header>
     <div class="logo">Voice<span>Bridge</span> &nbsp;·&nbsp; Pitch Room</div>
-    <div class="session-info">
-      <span class="session-dot"></span>LIVE SESSION<br>
-      <span id="session-time">00:00</span>
-    </div>
+    <div class="session"><div class="sdot"></div>LIVE &nbsp;<span id="stimer">00:00</span></div>
   </header>
 
-  <!-- SIDEBAR -->
   <aside>
     <div>
-      <div class="investors-title">Выбери инвестора</div>
-      <div class="investor-option active" onclick="selectInvestor(0,this)">
-        <span class="inv-emoji">🎯</span>
-        <div class="inv-info">
-          <div class="inv-name">Виктор Ш.</div>
-          <div class="inv-style">Скептик · B2C Hardware</div>
-        </div>
-      </div>
-      <div class="investor-option" onclick="selectInvestor(1,this)">
-        <span class="inv-emoji">📊</span>
-        <div class="inv-info">
-          <div class="inv-name">Анна К.</div>
-          <div class="inv-style">Финансист · Unit Economics</div>
-        </div>
-      </div>
-      <div class="investor-option" onclick="selectInvestor(2,this)">
-        <span class="inv-emoji">🌍</span>
-        <div class="inv-info">
-          <div class="inv-name">Michael R.</div>
-          <div class="inv-style">Global VC · Market Size</div>
-        </div>
-      </div>
-      <div class="investor-option" onclick="selectInvestor(3,this)">
-        <span class="inv-emoji">❤️</span>
-        <div class="inv-info">
-          <div class="inv-name">Лена М.</div>
-          <div class="inv-style">Impact · Social Good</div>
-        </div>
-      </div>
+      <div class="sec-title">Выбери инвестора</div>
+      <button class="inv-btn active" onclick="selInv(0,this)"><span class="inv-ico">🎯</span><span><span class="inv-name">Виктор</span><span class="inv-sub">Скептик · Hardware</span></span></button>
+      <button class="inv-btn" onclick="selInv(1,this)"><span class="inv-ico">📊</span><span><span class="inv-name">Анна</span><span class="inv-sub">Финансист · Unit Econ</span></span></button>
+      <button class="inv-btn" onclick="selInv(2,this)"><span class="inv-ico">🌍</span><span><span class="inv-name">Michael</span><span class="inv-sub">Global VC · Market</span></span></button>
+      <button class="inv-btn" onclick="selInv(3,this)"><span class="inv-ico">❤️</span><span><span class="inv-name">Лена</span><span class="inv-sub">Impact · Social</span></span></button>
     </div>
-
-    <div class="investor-card" id="investor-card">
-      <div class="investor-avatar" id="inv-emoji-big">🎯</div>
-      <div class="investor-name" id="inv-name-big">Виктор Шевченко</div>
-      <div class="investor-role" id="inv-role-big">PARTNER · HARDWARE FUND</div>
-      <div class="investor-bio" id="inv-bio-big">«Я видел сотни IoT-стартапов. Большинство умирают на масштабировании. Убедите меня, что вы — исключение.»</div>
+    <div class="inv-card">
+      <div class="inv-card-ava" id="ic-ava">🎯</div>
+      <div class="inv-card-name" id="ic-name">Виктор Шевченко</div>
+      <div class="inv-card-role" id="ic-role">PARTNER · HARDWARE FUND</div>
+      <div class="inv-card-bio" id="ic-bio">«Я видел сотни IoT-стартапов. Большинство умирают на масштабировании. Убедите меня, что вы — исключение.»</div>
     </div>
-
     <div class="score-box">
-      <div class="score-title">Оценка питча</div>
-      <div class="score-row">
-        <span class="score-label">Убедительность</span>
-        <div class="score-bar-wrap"><div class="score-bar" id="bar-conv" style="width:0%"></div></div>
-        <span class="score-val" id="val-conv">—</span>
-      </div>
-      <div class="score-row">
-        <span class="score-label">Чёткость</span>
-        <div class="score-bar-wrap"><div class="score-bar" id="bar-clar" style="width:0%"></div></div>
-        <span class="score-val" id="val-clar">—</span>
-      </div>
-      <div class="score-row">
-        <span class="score-label">Конкретность</span>
-        <div class="score-bar-wrap"><div class="score-bar" id="bar-data" style="width:0%"></div></div>
-        <span class="score-val" id="val-data">—</span>
-      </div>
-      <div class="score-row">
-        <span class="score-label">Уверенность</span>
-        <div class="score-bar-wrap"><div class="score-bar" id="bar-conf" style="width:0%"></div></div>
-        <span class="score-val" id="val-conf">—</span>
-      </div>
+      <div class="sec-title" style="margin-bottom:12px">Оценка питча</div>
+      <div class="score-row"><span class="score-lbl">Убедительность</span><div class="score-track"><div class="score-fill" id="s1"></div></div><span class="score-val" id="v1">—</span></div>
+      <div class="score-row"><span class="score-lbl">Конкретность</span><div class="score-track"><div class="score-fill" id="s2"></div></div><span class="score-val" id="v2">—</span></div>
+      <div class="score-row"><span class="score-lbl">Уверенность</span><div class="score-track"><div class="score-fill" id="s3"></div></div><span class="score-val" id="v3">—</span></div>
     </div>
   </aside>
 
-  <!-- MAIN CHAT -->
   <main>
-    <div class="chat-area" id="chat">
-      <div class="intro-msg">
-        <div class="intro-title">Питч-сессия</div>
-        <div class="intro-sub">Инвестор готов. Задайте тон первым — расскажите о VoiceBridge, или выберите вопрос ниже.<br><br>Отвечает настоящий Claude от лица фаундера.</div>
-      </div>
+    <div class="chat" id="chat">
+      <div class="intro"><h2>Питч-сессия</h2><p>Инвестор готов. Выбери вопрос снизу или напиши сам — Claude отвечает от лица инвестора.</p></div>
     </div>
-
-    <!-- SUGGESTIONS -->
-    <div class="suggestions" id="suggestions">
-      <div class="sug-label">Острые вопросы инвестора</div>
-    </div>
+    <div class="qs" id="qbox"><div class="ql">Острые вопросы инвестора</div></div>
   </main>
 
-  <!-- INPUT -->
   <footer>
-    <button class="mic-btn" id="mic-btn" onclick="toggleMic()" title="Говорить голосом">🎤</button>
-    <div class="input-wrap">
-      <textarea id="input" placeholder="Ваш ответ инвестору..." rows="1"
-        onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
-    </div>
-    <button class="send-btn" id="send-btn" onclick="sendMessage()">
-      <div class="send-spinner" id="spinner"></div>
-      <span id="send-label">ОТПРАВИТЬ</span>
+    <button class="mic-btn" id="mbtn" onclick="toggleMic()" title="Говорить голосом">🎤</button>
+    <textarea id="inp" placeholder="Ваш ответ инвестору..." rows="1" onkeydown="onKey(event)" oninput="grow(this)"></textarea>
+    <button class="sbtn" id="sbtn" onclick="send()">
+      <div class="spin" id="spin"></div>
+      <span id="slbl">ОТПРАВИТЬ</span>
     </button>
   </footer>
-
 </div>
 
 <script>
-// ─── INVESTORS ───
-const INVESTORS = [
-  {
-    emoji: '🎯',
-    name: 'Виктор Шевченко',
-    role: 'PARTNER · HARDWARE FUND',
-    bio: '«Я видел сотни IoT-стартапов. Большинство умирают на масштабировании. Убедите меня, что вы — исключение.»',
-    style: 'жёсткий скептик, задаёт острые вопросы про железо, масштабирование, конкурентов. Перебивает расплывчатые ответы. Ценит конкретику и цифры.',
-    questions: [
-      'Почему пользователь не просто позвонит по WhatsApp?',
-      'Сколько стоит производство одного устройства?',
-      'Как вы масштабируетесь до 100k единиц?',
-      'Кто ваш главный конкурент и почему вы лучше?',
-    ]
-  },
-  {
-    emoji: '📊',
-    name: 'Анна Карпова',
-    role: 'ANALYST · GROWTH FUND',
-    bio: '«Красивые истории не окупают инвестиции. Покажите мне математику: CAC, LTV, payback period.»',
-    style: 'финансист-аналитик, глубоко копает unit economics, margin, churn. Задаёт конкретные вопросы про цифры. Не верит без расчётов.',
-    questions: [
-      'Какой у вас CAC и LTV?',
-      'Когда выходите на breakeven?',
-      'Какая маржинальность устройства?',
-      'Модель подписки — сколько платят в месяц?',
-    ]
-  },
-  {
-    emoji: '🌍',
-    name: 'Michael Reynolds',
-    role: 'PARTNER · GLOBAL VENTURES',
-    bio: '"Show me the TAM. Family connectivity is local until it isn\'t — what\'s your global play?"',
-    style: 'global VC, speaks about market size, international expansion, competitive moats. Asks in a mix of English and Russian. Thinks big.',
-    questions: [
-      'What\'s your total addressable market globally?',
-      'How do you defend against Amazon entering this space?',
-      'What\'s the path from Russia to Europe to US?',
-      'Why now? Why hasn\'t this been built before?',
-    ]
-  },
-  {
-    emoji: '❤️',
-    name: 'Лена Морозова',
-    role: 'FOUNDER · IMPACT FUND',
-    bio: '«Технологии должны возвращать людей друг к другу. Но как вы измеряете реальное влияние на жизнь?»',
-    style: 'impact-инвестор, спрашивает про социальный эффект, доступность продукта, реальные истории пользователей. Чувствительна к этике и одиночеству пожилых.',
-    questions: [
-      'Как вы измеряете счастье пользователей?',
-      'Что происходит с пожилым, у которого нет детей?',
-      'Как сделать устройство доступным для малообеспеченных семей?',
-      'Расскажите реальную историю пользователя.',
-    ]
-  }
+const INVS=[
+  {emoji:'🎯',name:'Виктор Шевченко',role:'PARTNER · HARDWARE FUND',
+   bio:'«Я видел сотни IoT-стартапов. Большинство умирают на масштабировании. Убедите меня, что вы — исключение.»',
+   style:'жёсткий скептик по hardware. Перебивает расплывчатые ответы. Требует цифры. Называет конкурентов.',
+   open:'Добрый день. Прочитал ваш one-pager. Интересно. У меня пять минут. Начинайте.',
+   qs:['Почему пользователь не позвонит через WhatsApp?','Сколько стоит производство одного устройства?','Как масштабируетесь до 100 000 единиц?','Кто главный конкурент и почему вы лучше?']},
+  {emoji:'📊',name:'Анна Карпова',role:'ANALYST · GROWTH FUND',
+   bio:'«Красивые истории не окупают инвестиции. Покажите мне математику: CAC, LTV, payback period.»',
+   style:'финансист. Не верит без расчётов. Копает CAC, LTV, churn, маржу.',
+   open:'Итак, VoiceBridge. Прежде чем начнём — какой у вас CAC и LTV на текущий момент?',
+   qs:['Какой у вас CAC и LTV?','Когда выходите на breakeven?','Какая маржинальность устройства?','Почему подписка €20, а не €50?']},
+  {emoji:'🌍',name:'Michael Reynolds',role:'PARTNER · GLOBAL VENTURES',
+   bio:'"Show me the market. Romania is interesting, but what\'s the global play here?"',
+   style:'global VC. Thinks about TAM, moats, international expansion. Mix of Russian and English.',
+   open:'Show me the market. Romania is interesting, but what\'s the global play here?',
+   qs:["What's your total addressable market globally?",'How do you defend against Amazon entering this space?',"Why now — why hasn't this been built before?",'What\'s the path from Eastern Europe to Western markets?']},
+  {emoji:'❤️',name:'Лена Морозова',role:'FOUNDER · IMPACT FUND',
+   bio:'«Технологии должны возвращать людей друг к другу. Как вы измеряете реальное влияние?»',
+   style:'impact-инвестор. Спрашивает про реальный эффект, доступность, истории пользователей.',
+   open:'Расскажите мне одну реальную историю. Не про технологию — про человека, которому это помогло.',
+   qs:['Как вы измеряете счастье пользователей?','Что происходит с пожилым, у которого нет детей?','Как сделать устройство доступным для бедных семей?','Как вы предотвращаете зависимость от устройства?']}
 ];
 
-let currentInvestor = 0;
-let history = [];
-let isLoading = false;
-let sessionStart = Date.now();
-let scores = { conv: 0, clar: 0, data: 0, conf: 0, count: 0 };
+let cur=0,hist=[],loading=false,sc={a:0,b:0,c:0};
+const t0=Date.now();
+setInterval(()=>{const s=Math.floor((Date.now()-t0)/1000);document.getElementById('stimer').textContent=String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');},1000);
 
-// Session timer
-setInterval(() => {
-  const s = Math.floor((Date.now() - sessionStart) / 1000);
-  const m = Math.floor(s / 60).toString().padStart(2,'0');
-  const sec = (s % 60).toString().padStart(2,'0');
-  document.getElementById('session-time').textContent = `${m}:${sec}`;
-}, 1000);
-
-function selectInvestor(idx, el) {
-  currentInvestor = idx;
-  document.querySelectorAll('.investor-option').forEach(e => e.classList.remove('active'));
+function selInv(i,el){
+  cur=i;
+  document.querySelectorAll('.inv-btn').forEach(b=>b.classList.remove('active'));
   el.classList.add('active');
-  const inv = INVESTORS[idx];
-  document.getElementById('inv-emoji-big').textContent = inv.emoji;
-  document.getElementById('inv-name-big').textContent = inv.name;
-  document.getElementById('inv-role-big').textContent = inv.role;
-  document.getElementById('inv-bio-big').textContent = inv.bio;
-  renderSuggestions();
-  // Reset and greet
-  history = [];
-  document.getElementById('chat').innerHTML = `
-    <div class="intro-msg">
-      <div class="intro-title">${inv.emoji} ${inv.name.split(' ')[0]}</div>
-      <div class="intro-sub" style="font-style:italic;color:var(--text-dim);">${inv.bio}</div>
-    </div>`;
-  // Auto-trigger investor opening question
-  setTimeout(() => triggerInvestorOpen(), 600);
+  const v=INVS[i];
+  document.getElementById('ic-ava').textContent=v.emoji;
+  document.getElementById('ic-name').textContent=v.name;
+  document.getElementById('ic-role').textContent=v.role;
+  document.getElementById('ic-bio').textContent=v.bio;
+  renderQs();hist=[];
+  document.getElementById('chat').innerHTML='<div class="intro"><h2>'+v.name.split(' ')[0]+'</h2><p style="font-style:italic">'+v.role+'</p></div>';
+  setTimeout(()=>addInv(v.open),500);
 }
 
-function renderSuggestions() {
-  const inv = INVESTORS[currentInvestor];
-  const box = document.getElementById('suggestions');
-  box.innerHTML = '<div class="sug-label">Острые вопросы инвестора</div>';
-  inv.questions.forEach(q => {
-    const btn = document.createElement('button');
-    btn.className = 'sug-btn';
-    btn.textContent = q;
-    btn.onclick = () => triggerInvestorQuestion(q);
-    box.appendChild(btn);
+function renderQs(){
+  const b=document.getElementById('qbox');
+  b.innerHTML='<div class="ql">Острые вопросы инвестора</div>';
+  INVS[cur].qs.forEach(q=>{
+    const btn=document.createElement('button');
+    btn.className='qbtn';btn.textContent=q;
+    btn.onclick=()=>{if(!loading){addInv(q);setQs(true);}};
+    b.appendChild(btn);
   });
 }
 
-function triggerInvestorOpen() {
-  const inv = INVESTORS[currentInvestor];
-  const openings = [
-    `Добрый день. Прочитал ваш one-pager. Интересно. У меня пять минут. Начинайте.`,
-    `Итак, VoiceBridge. Что это и зачем мне в это инвестировать?`,
-    `Good. I've seen your deck. Let's skip the slides — tell me why this works.`,
-    `Я слышала про одиночество пожилых. Но как VoiceBridge реально меняет это? Начните с самого главного.`,
-  ];
-  addInvestorMessage(openings[currentInvestor]);
+function addInv(text){
+  const v=INVS[cur],c=document.getElementById('chat');
+  const d=document.createElement('div');d.className='msg';
+  d.innerHTML='<div class="mh"><div class="mava">'+v.emoji+'</div><div class="mname">'+v.name.split(' ')[0]+'</div></div><div class="bubble inv">'+esc(text)+'</div>';
+  c.appendChild(d);hist.push({role:'user',content:text});scroll();setQs(true);
 }
 
-function triggerInvestorQuestion(q) {
-  if (isLoading) return;
-  addInvestorMessage(q);
-  // Scroll
-  scrollChat();
+function addFounder(text){
+  const c=document.getElementById('chat');
+  const d=document.createElement('div');d.className='msg';d.style.alignItems='flex-end';
+  d.innerHTML='<div class="mh" style="flex-direction:row-reverse"><div class="mname">Фаундер</div><div class="mava">🚀</div></div><div class="bubble founder">'+esc(text)+'</div>';
+  c.appendChild(d);hist.push({role:'assistant',content:text});scroll();updScore(text);setQs(false);
 }
 
-function addInvestorMessage(text) {
-  const inv = INVESTORS[currentInvestor];
-  const chat = document.getElementById('chat');
-  const div = document.createElement('div');
-  div.className = 'msg investor';
-  div.innerHTML = `
-    <div class="msg-header">
-      <div class="msg-avatar">${inv.emoji}</div>
-      <div class="msg-name">${inv.name.split(' ')[0]}</div>
-    </div>
-    <div class="msg-bubble">${escHtml(text)}</div>`;
-  chat.appendChild(div);
-  history.push({ role: 'user', content: text });
-  scrollChat();
-  setSuggDisabled(true);
+function onKey(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send();}}
+function grow(el){el.style.height='auto';el.style.height=Math.min(el.scrollHeight,120)+'px';}
+
+function send(){
+  const inp=document.getElementById('inp');
+  const t=inp.value.trim();if(!t||loading)return;
+  inp.value='';inp.style.height='auto';
+  addFounder(t);askReply();
 }
 
-function addFounderMessage(text) {
-  const chat = document.getElementById('chat');
-  const div = document.createElement('div');
-  div.className = 'msg founder';
-  div.innerHTML = `
-    <div class="msg-header" style="justify-content:flex-end">
-      <div class="msg-name">Фаундер</div>
-      <div class="msg-avatar">🚀</div>
-    </div>
-    <div class="msg-bubble"><span class="streaming-text">${escHtml(text)}</span></div>`;
-  chat.appendChild(div);
-  history.push({ role: 'assistant', content: text });
-  scrollChat();
-  setSuggDisabled(false);
-  updateScores(text);
-}
+async function askReply(){
+  setLoad(true);
+  const v=INVS[cur];
+  const sys=`Ты — ${v.name}, ${v.role}. Характер: ${v.style}\n\nКонтекст о VoiceBridge:\n- Устройство голосовой связи: пожилые родители ↔ взрослые дети\n- ESP32-S3, WebSocket, push-to-talk, задержка < 1 сек\n- Без экрана — одно касание = уведомление сыну/дочери\n- B2C €250 + €20/мес; B2B лицензирование\n- Рынок: Румыния 3.4 млн пожилых, 1.2 млн диаспора за рубежом\n- Lunara AI: ИИ-компаньон (двойное касание)\n\nПравила: 2-3 предложения реакции + ОДИН острый вопрос. Живой тон.`;
 
-function handleKey(e) {
-  if (e.key === 'Enter' && !e.shiftKey) {
-    e.preventDefault();
-    sendMessage();
-  }
-}
+  const chat=document.getElementById('chat');
+  const td=document.createElement('div');td.id='typing';td.className='msg';
+  td.innerHTML='<div class="mh"><div class="mava">'+v.emoji+'</div><div class="mname">'+v.name.split(' ')[0]+'</div></div><div class="typing"><div class="tdot"></div><div class="tdot"></div><div class="tdot"></div></div>';
+  chat.appendChild(td);scroll();
 
-function autoResize(el) {
-  el.style.height = 'auto';
-  el.style.height = Math.min(el.scrollHeight, 120) + 'px';
-}
-
-async function sendMessage() {
-  const input = document.getElementById('input');
-  const text = input.value.trim();
-  if (!text || isLoading) return;
-
-  input.value = '';
-  input.style.height = 'auto';
-
-  // Add founder message to chat + history as a "thinking" bubble first
-  addFounderMessage(text);
-
-  // Now ask Claude to play investor and respond
-  await askInvestorReply(text);
-}
-
-async function askInvestorReply(founderAnswer) {
-  setLoading(true);
-  const inv = INVESTORS[currentInvestor];
-
-  const systemPrompt = `Ты — ${inv.name}, инвестор. Характер: ${inv.style}
-
-Контекст о VoiceBridge (знаешь как инвестор, читавший материалы):
-- Устройство голосовой связи между пожилыми родителями и взрослыми детьми
-- ESP32-S3, WebSocket, push-to-talk < 1 сек задержки
-- Без экрана, без звонков — одна кнопка
-- Бизнес: B2C продажа устройства + SaaS подписка + B2B лицензирование
-- Lunara AI: ИИ-компаньон (двойное касание активирует голосовой ИИ)
-- Форм-факторы: колонка, игрушка, сенсорный шар
-- Конкуренты: смартфон (сложно), WhatsApp (сложно), Alexa (не для связи)
-
-Правила:
-- Задавай ОДИН острый follow-up вопрос в конце ответа
-- Реагируй на то, что сказал фаундер — хвали сильные аргументы, атакуй слабые
-- Будь живым собеседником, не шаблоном
-- Ответ: 2-4 предложения + вопрос
-- Язык: русский (или английский если ты Michael Reynolds)
-- НЕ пиши "Как инвестор я..." — говори естественно`;
-
-  const chat = document.getElementById('chat');
-
-  // Typing indicator
-  const typingDiv = document.createElement('div');
-  typingDiv.className = 'msg investor';
-  typingDiv.id = 'typing';
-  typingDiv.innerHTML = `
-    <div class="msg-header">
-      <div class="msg-avatar">${inv.emoji}</div>
-      <div class="msg-name">${inv.name.split(' ')[0]}</div>
-    </div>
-    <div class="typing-indicator">
-      <div class="typing-dot"></div>
-      <div class="typing-dot"></div>
-      <div class="typing-dot"></div>
-    </div>`;
-  chat.appendChild(typingDiv);
-  scrollChat();
-
-  try {
-    const apiKey = localStorage.getItem('vb_api_key') || '';
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true'
-      },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 1000,
-        system: systemPrompt,
-        messages: history,
-      })
+  try{
+    const key=localStorage.getItem('vb_key')||'';
+    const r=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:600,system:sys,messages:hist})
     });
-
-    const data = await res.json();
-    const reply = data.content?.[0]?.text || 'Хм. Подумаю над этим.';
-
-    // Remove typing
+    const data=await r.json();
+    const reply=data.content?.[0]?.text||'Интересно. Продолжайте.';
     document.getElementById('typing')?.remove();
-
-    addInvestorMessage(reply);
-  } catch(e) {
+    addInv(reply);
+  }catch(e){
     document.getElementById('typing')?.remove();
-    addInvestorMessage('Связь прервалась. Попробуйте ещё раз.');
+    addInv('Ошибка соединения. Проверьте API ключ и попробуйте снова.');
   }
-
-  setLoading(false);
+  setLoad(false);
 }
 
-function updateScores(text) {
-  scores.count++;
-  // Heuristic scoring based on text content
-  const hasNumbers = /\d+/.test(text);
-  const hasConcreteWords = /(потому что|благодаря|именно|конкретно|например|рынок|млн|тыс)/i.test(text);
-  const length = text.length;
-  const isConfident = !/(возможно|наверное|не знаю|может быть)/i.test(text);
-
-  scores.conv = Math.min(100, scores.conv * 0.7 + (length > 100 ? 80 : 50) * 0.3 + (hasConcreteWords ? 20 : 0));
-  scores.clar = Math.min(100, scores.clar * 0.7 + (length < 400 && length > 40 ? 85 : 60) * 0.3);
-  scores.data = Math.min(100, scores.data * 0.7 + (hasNumbers ? 90 : 40) * 0.3);
-  scores.conf = Math.min(100, scores.conf * 0.7 + (isConfident ? 88 : 45) * 0.3);
-
-  const animate = (id, valId, val) => {
-    document.getElementById(id).style.width = val + '%';
-    document.getElementById(valId).textContent = Math.round(val) + '%';
-  };
-  setTimeout(() => {
-    animate('bar-conv', 'val-conv', scores.conv);
-    animate('bar-clar', 'val-clar', scores.clar);
-    animate('bar-data', 'val-data', scores.data);
-    animate('bar-conf', 'val-conf', scores.conf);
-  }, 300);
+function updScore(t){
+  const hasNum=/\d+/.test(t);
+  const hasConcrete=/(потому|благодаря|именно|например|рынок|млн|тыс|€)/i.test(t);
+  const confident=!/(возможно|наверное|не знаю|может быть)/i.test(t);
+  sc.a=Math.min(100,sc.a*0.6+(t.length>80?85:50)*0.4+(hasConcrete?12:0));
+  sc.b=Math.min(100,sc.b*0.6+(hasNum?92:40)*0.4);
+  sc.c=Math.min(100,sc.c*0.6+(confident?90:45)*0.4);
+  setTimeout(()=>{
+    ['a','b','c'].forEach((k,i)=>{
+      const v=Math.round(sc[k]);
+      document.getElementById('s'+(i+1)).style.width=v+'%';
+      document.getElementById('v'+(i+1)).textContent=v+'%';
+    });
+  },200);
 }
 
-function setLoading(v) {
-  isLoading = v;
-  document.getElementById('input').disabled = v;
-  document.getElementById('send-btn').disabled = v;
-  document.getElementById('spinner').style.display = v ? 'block' : 'none';
-  document.getElementById('send-label').textContent = v ? 'ДУМАЕТ...' : 'ОТПРАВИТЬ';
+function setLoad(v){
+  loading=v;
+  document.getElementById('inp').disabled=v;
+  document.getElementById('sbtn').disabled=v;
+  document.getElementById('spin').style.display=v?'block':'none';
+  document.getElementById('slbl').textContent=v?'ДУМАЕТ...':'ОТПРАВИТЬ';
 }
+function setQs(v){document.querySelectorAll('.qbtn').forEach(b=>b.disabled=v);}
+function scroll(){const c=document.getElementById('chat');setTimeout(()=>c.scrollTo({top:c.scrollHeight,behavior:'smooth'}),50);}
+function esc(t){return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');}
 
-function setSuggDisabled(v) {
-  document.querySelectorAll('.sug-btn').forEach(b => b.disabled = v);
-}
-
-function scrollChat() {
-  const c = document.getElementById('chat');
-  setTimeout(() => c.scrollTo({ top: c.scrollHeight, behavior: 'smooth' }), 50);
-}
-
-function escHtml(t) {
-  return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
-}
-
-
-// ─── MICROPHONE ───
-let recognition = null;
-let isRecording = false;
-
-function toggleMic() {
-  if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-    alert('Ваш браузер не поддерживает голосовой ввод. Используйте Chrome.');
-    return;
+// MICROPHONE
+let recog=null,isRec=false;
+function toggleMic(){
+  if(!('webkitSpeechRecognition' in window)&&!('SpeechRecognition' in window)){
+    alert('Голосовой ввод работает только в Chrome.');return;
   }
-
-  if (isRecording) {
-    recognition.stop();
-    return;
-  }
-
-  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-  recognition = new SpeechRecognition();
-  recognition.lang = 'ru-RU';
-  recognition.continuous = false;
-  recognition.interimResults = true;
-
-  const micBtn = document.getElementById('mic-btn');
-  const input = document.getElementById('input');
-
-  recognition.onstart = () => {
-    isRecording = true;
-    micBtn.classList.add('recording');
-    micBtn.textContent = '⏹';
-    input.placeholder = 'Говорите...';
-  };
-
-  recognition.onresult = (e) => {
-    let transcript = '';
-    for (let i = 0; i < e.results.length; i++) {
-      transcript += e.results[i][0].transcript;
-    }
-    input.value = transcript;
-    autoResize(input);
-  };
-
-  recognition.onend = () => {
-    isRecording = false;
-    micBtn.classList.remove('recording');
-    micBtn.textContent = '🎤';
-    input.placeholder = 'Ваш ответ инвестору...';
-    if (input.value.trim()) sendMessage();
-  };
-
-  recognition.onerror = (e) => {
-    isRecording = false;
-    micBtn.classList.remove('recording');
-    micBtn.textContent = '🎤';
-    input.placeholder = 'Ваш ответ инвестору...';
-  };
-
-  recognition.start();
+  if(isRec){recog.stop();return;}
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  recog=new SR();recog.lang='ru-RU';recog.continuous=false;recog.interimResults=true;
+  const mb=document.getElementById('mbtn'),inp=document.getElementById('inp');
+  recog.onstart=()=>{isRec=true;mb.classList.add('rec');mb.textContent='⏹';inp.placeholder='Говорите...';};
+  recog.onresult=(e)=>{let s='';for(let i=0;i<e.results.length;i++)s+=e.results[i][0].transcript;inp.value=s;grow(inp);};
+  recog.onend=()=>{isRec=false;mb.classList.remove('rec');mb.textContent='🎤';inp.placeholder='Ваш ответ инвестору...';if(inp.value.trim())send();};
+  recog.onerror=()=>{isRec=false;mb.classList.remove('rec');mb.textContent='🎤';inp.placeholder='Ваш ответ инвестору...';};
+  recog.start();
 }
 
-// ─── API KEY SCREEN ───
-const KEY_STYLE = `
-  #key-screen{position:fixed;inset:0;background:rgba(255,255,255,0.98);display:flex;align-items:center;justify-content:center;z-index:9999;font-family:Georgia,serif}
-  .key-box{background:#ffffff;border:2px solid #111111;border:1px solid rgba(139,94,26,0.2);border-radius:8px;padding:40px;max-width:420px;width:90%;text-align:center}
-  .key-title{font-size: 33px;color:#111111;margin-bottom:8px;font-weight:300}
-  .key-sub{font-size: 20px;color:#000000;line-height:1.6;margin-bottom:24px}
-  .key-input{width:100%;padding:12px 14px;border:1.5px solid #aaaaaa;border-radius:6px;font-size: 20px;font-family:monospace;color:#111111;background:#f5f5f5;margin-bottom:8px}
-  .key-input:focus{outline:none;border-color:#111111}
-  .key-btn{width:100%;padding:13px;background:#111111;color:#ffffff;border:none;border-radius:6px;font-size: 20px;cursor:pointer;letter-spacing:1px;margin-top:8px}
-  .key-btn:hover{background:#000000}
-  .key-hint{font-size: 16px;color:#777777;margin-top:16px;line-height:1.5}
-  .key-link{color:#111111;text-decoration:underline;text-decoration:none}
-`;
-
-function showKeyScreen() {
-  const style = document.createElement('style');
-  style.textContent = KEY_STYLE;
-  document.head.appendChild(style);
-
-  const div = document.createElement('div');
-  div.id = 'key-screen';
-  div.innerHTML = `
-    <div class="key-box">
-      <div class="key-title">VoiceBridge · Pitch Simulator</div>
-      <div class="key-sub">Для работы симулятора нужен API ключ Anthropic.<br>Ключ хранится только у вас в браузере.</div>
-      <input class="key-input" id="key-inp" type="password" placeholder="sk-ant-api03-..." />
-      <button class="key-btn" onclick="saveKey()">Начать питч-сессию →</button>
-      <div class="key-hint">
-        Получить ключ: <a class="key-link" href="https://console.anthropic.com" target="_blank">console.anthropic.com</a><br>
-        Бесплатный кредит $5 при регистрации
-      </div>
-    </div>`;
+// KEY SCREEN
+function showKey(){
+  const div=document.createElement('div');div.id='ks';
+  div.innerHTML='<div class="kb"><h2>VoiceBridge · Pitch Simulator</h2><p>Для работы нужен API ключ Anthropic.<br>Хранится только в вашем браузере.</p><input id="ki" type="password" placeholder="sk-ant-api03-..."/><button onclick="saveKey()">НАЧАТЬ ПИТЧ-СЕССИЮ →</button><div class="hint">Получить ключ: <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a><br>При регистрации $5 бесплатного кредита</div></div>';
   document.body.appendChild(div);
-
-  document.getElementById('key-inp').addEventListener('keydown', e => {
-    if (e.key === 'Enter') saveKey();
-  });
+  document.getElementById('ki').addEventListener('keydown',e=>{if(e.key==='Enter')saveKey();});
 }
-
-function saveKey() {
-  const val = document.getElementById('key-inp').value.trim();
-  if (!val.startsWith('sk-')) {
-    document.getElementById('key-inp').style.border = '1px solid #c0392b';
-    return;
-  }
-  localStorage.setItem('vb_api_key', val);
-  document.getElementById('key-screen').remove();
+function saveKey(){
+  const v=document.getElementById('ki').value.trim();
+  if(!v.startsWith('sk-')){document.getElementById('ki').style.borderColor='#cc0000';return;}
+  localStorage.setItem('vb_key',v);
+  document.getElementById('ks').remove();
   init();
 }
+function init(){renderQs();setTimeout(()=>addInv(INVS[0].open),600);}
 
-function init() {
-  renderSuggestions();
-  setTimeout(triggerInvestorOpen, 800);
-}
-
-// INIT
-if (!localStorage.getItem('vb_api_key')) {
-  showKeyScreen();
-} else {
-  init();
-}
+if(!localStorage.getItem('vb_key'))showKey();else init();
 </script>
 </body>
 </html>
