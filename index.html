@@ -73,8 +73,8 @@ main{display:flex;flex-direction:column;overflow:hidden;background:#ffffff}
 footer{grid-column:2;padding:16px 20px;border-top:3px solid #000000;background:#eeeeee;display:flex;gap:10px;align-items:center}
 .mic-btn{width:52px;height:52px;border-radius:50%;border:3px solid #000000;background:#f0f0f0;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;transition:all 0.2s}
 .mic-btn:hover{background:#eeeeee}
-.mic-btn.rec{background:#cc0000;border-color:#cc0000;animation:mpulse 1s infinite}
-@keyframes mpulse{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
+.mic-btn.rec{background:#16a34a;border-color:#16a34a;color:#ffffff;animation:mpulse 1s infinite}
+@keyframes mpulse{0%,100%{transform:scale(1);box-shadow:0 0 0 0 rgba(22,163,74,0.5)}50%{transform:scale(1.05);box-shadow:0 0 0 8px rgba(22,163,74,0)}}
 textarea{flex:1;border:2px solid #111111;border-radius:4px;background:#ffffff;color:#000000;font-family:'Inter',sans-serif;font-size:17px;font-weight:600;padding:12px 14px;resize:none;min-height:52px;max-height:120px;line-height:1.5}
 textarea:focus{outline:none;border-color:#555555}
 textarea::placeholder{color:#444444;font-weight:500}
@@ -112,14 +112,14 @@ textarea:disabled{opacity:0.4}
 <body>
 <div class="app">
   <header>
-    <div class="logo">Voice<span>Bridge</span> &nbsp;·&nbsp; Pitch Room</div>
-    <div class="session"><div class="sdot"></div>LIVE &nbsp;<span id="stimer">00:00</span></div>
+    <div class="logo">Voice<span>Bridge</span> &nbsp;·&nbsp; Питч-симулятор</div>
+    <div class="session"><div class="sdot"></div>СЕССИЯ &nbsp;<span id="stimer">00:00</span></div>
   </header>
 
   <aside>
     <div>
       <div class="sec-title">Выбери инвестора</div>
-      <button class="inv-btn active" onclick="selInv(0,this)"><span class="inv-ico">🎯</span><span><span class="inv-name">Виктор</span><span class="inv-sub">Скептик · Hardware</span></span></button>
+      <button class="inv-btn active" onclick="selInv(0,this)"><span class="inv-ico">🎯</span><span><span class="inv-name">Виктор</span><span class="inv-sub">Скептик · Железо</span></span></button>
       <button class="inv-btn" onclick="selInv(1,this)"><span class="inv-ico">📊</span><span><span class="inv-name">Анна</span><span class="inv-sub">Финансист · Unit Econ</span></span></button>
       <button class="inv-btn" onclick="selInv(2,this)"><span class="inv-ico">🌍</span><span><span class="inv-name">Michael</span><span class="inv-sub">Global VC · Market</span></span></button>
       <button class="inv-btn" onclick="selInv(3,this)"><span class="inv-ico">❤️</span><span><span class="inv-name">Лена</span><span class="inv-sub">Impact · Social</span></span></button>
@@ -140,7 +140,7 @@ textarea:disabled{opacity:0.4}
 
   <main>
     <div class="chat" id="chat">
-      <div class="intro"><h2>Питч-сессия</h2><p>Инвестор готов. Выбери вопрос снизу или напиши сам — Claude отвечает от лица инвестора.</p></div>
+      <div class="intro"><h2>Питч-сессия</h2><p>Инвестор готов. Выбери вопрос снизу или напиши сам — Claude отвечает от лица инвестора в реальном времени.</p></div>
     </div>
     <div class="qs" id="qbox"><div class="ql">Острые вопросы инвестора</div></div>
   </main>
@@ -163,7 +163,7 @@ const INVS=[
    open:'Добрый день. Прочитал ваш one-pager. Интересно. У меня пять минут. Начинайте.',
    qs:['Почему пользователь не позвонит через WhatsApp?','Сколько стоит производство одного устройства?','Как масштабируетесь до 100 000 единиц?','Кто главный конкурент и почему вы лучше?']},
   {emoji:'📊',name:'Анна Карпова',role:'ANALYST · GROWTH FUND',
-   bio:'«Красивые истории не окупают инвестиции. Покажите мне математику: CAC, LTV, payback period.»',
+   bio:'«Красивые истории не окупают инвестиции. Покажите математику: CAC, LTV, срок окупаемости.»',
    style:'финансист. Не верит без расчётов. Копает CAC, LTV, churn, маржу.',
    open:'Итак, VoiceBridge. Прежде чем начнём — какой у вас CAC и LTV на текущий момент?',
    qs:['Какой у вас CAC и LTV?','Когда выходите на breakeven?','Какая маржинальность устройства?','Почему подписка €20, а не €50?']},
@@ -228,6 +228,13 @@ function onKey(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send();}}
 function grow(el){el.style.height='auto';el.style.height=Math.min(el.scrollHeight,120)+'px';}
 
 function send(){
+  // если микрофон активен — останавливаем и отправляем через onend
+  if(isRec){
+    stopAndSend=true;
+    isRec=false;
+    recog.stop();
+    return;
+  }
   const inp=document.getElementById('inp');
   const t=inp.value.trim();if(!t||loading)return;
   inp.value='';inp.style.height='auto';
@@ -294,7 +301,7 @@ function esc(t){return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g
 let recog=null,isRec=false,micFinal='';
 function toggleMic(){
   if(!('webkitSpeechRecognition' in window)&&!('SpeechRecognition' in window)){
-    alert('Голосовой ввод работает только в Chrome.');return;
+    alert('Голосовой ввод работает только в браузере Chrome.');return;
   }
   if(isRec){
     recog.stop();
@@ -311,9 +318,9 @@ function toggleMic(){
   recog.onstart=()=>{
     isRec=true;
     mb.classList.add('rec');
-    mb.textContent='⏹';
-    mb.title='Нажми чтобы остановить';
-    inp.placeholder='Говорите... (нажмите ⏹ чтобы закончить)';
+    mb.textContent='🟢';mb.style.fontSize='18px';
+    mb.title='Нажми ⏹ чтобы остановить и отправить';
+    inp.placeholder='Говорите... нажмите ⏹ чтобы отправить';
     inp.value='';
   };
 
@@ -351,7 +358,7 @@ function stopMic(){
   isRec=false;
   const mb=document.getElementById('mbtn'),inp=document.getElementById('inp');
   mb.classList.remove('rec');
-  mb.textContent='🎤';
+  mb.textContent='🎤';mb.style.fontSize='22px';
   mb.title='Говорить голосом';
   inp.placeholder='Ваш ответ инвестору...';
   if(inp.value.trim()) send();
@@ -360,7 +367,7 @@ function stopMic(){
 // KEY SCREEN
 function showKey(){
   const div=document.createElement('div');div.id='ks';
-  div.innerHTML='<div class="kb"><h2>VoiceBridge · Pitch Simulator</h2><p>Для работы нужен API ключ Anthropic.<br>Хранится только в вашем браузере.</p><input id="ki" type="password" placeholder="sk-ant-api03-..."/><button onclick="saveKey()">НАЧАТЬ ПИТЧ-СЕССИЮ →</button><div class="hint">Получить ключ: <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a><br>При регистрации $5 бесплатного кредита</div></div>';
+  div.innerHTML='<div class="kb"><h2>VoiceBridge · Питч-симулятор</h2><p>Для работы нужен API ключ Anthropic.<br>Хранится только в вашем браузере.</p><input id="ki" type="password" placeholder="sk-ant-api03-..."/><button onclick="saveKey()">НАЧАТЬ ПИТЧ-СЕССИЮ →</button><div class="hint">Получить ключ: <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a><br>При регистрации — $5 бесплатного кредита</div></div>';
   document.body.appendChild(div);
   document.getElementById('ki').addEventListener('keydown',e=>{if(e.key==='Enter')saveKey();});
 }
