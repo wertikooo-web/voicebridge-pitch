@@ -530,9 +530,14 @@ function mentorSend(msgId){
 function endSession(){
   if(!confirm('Завершить питч-сессию?')) return;
   if(isRec){ micStop(); }
-  // показываем итог
-  const chat=document.getElementById('chat');
+  // принудительно обновляем сайдбар перед показом итогов
   const sc1=Math.round(sc.a), sc2=Math.round(sc.b), sc3=Math.round(sc.c);
+  ['a','b','c'].forEach((k,i)=>{
+    const v=Math.round(sc[k]);
+    document.getElementById('s'+(i+1)).style.width=v+'%';
+    document.getElementById('v'+(i+1)).textContent= v>0 ? v+'%' : '0%';
+  });
+  const chat=document.getElementById('chat');
   const avg=Math.round((sc1+sc2+sc3)/3);
   const grade = avg>=80?'Отлично 🏆':avg>=60?'Хорошо 👍':avg>=40?'Неплохо 💪':'Нужна практика 📚';
   chat.innerHTML=`<div class="intro" style="gap:16px">
