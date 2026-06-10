@@ -238,12 +238,12 @@ function grow(el){el.style.height='auto';el.style.height=Math.min(el.scrollHeigh
 // Главная функция отправки — всегда работает
 function doSend(){
   if(loading) return;
-  // если микрофон активен — сначала останавливаем
   if(isRec){ micStop(); }
-  // берём текст и отправляем
   const inp=document.getElementById('inp');
   const t=inp.value.trim();
   if(!t) return;
+  // сбрасываем micFinal чтобы onresult не переписал поле после очистки
+  micFinal='';
   inp.value=''; inp.style.height='auto';
   addFounder(t); askReply();
 }
