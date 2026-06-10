@@ -149,7 +149,7 @@ textarea:disabled{opacity:0.4}
   <footer>
     <button class="mic-btn" id="mbtn" onclick="toggleMic()" title="Говорить голосом">🎤</button>
     <textarea id="inp" placeholder="Ваш ответ инвестору..." rows="1" onkeydown="onKey(event)" oninput="grow(this)"></textarea>
-    <button class="sbtn" id="sbtn" onclick="send()">
+    <button class="sbtn" id="sbtn" onclick="doSend()">
       <div class="spin" id="spin"></div>
       <span id="slbl">ОТПРАВИТЬ</span>
     </button>
@@ -232,15 +232,20 @@ function addFounder(text){
   c.appendChild(d);hist.push({role:'user',content:text});scroll();updScore(text);
 }
 
-function onKey(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send();}}
+function onKey(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();doSend();}}
 function grow(el){el.style.height='auto';el.style.height=Math.min(el.scrollHeight,120)+'px';}
 
-function send(){
-  if(isRec){ stopMicAndSend(); return; }
+// Главная функция отправки — всегда работает
+function doSend(){
+  if(loading) return;
+  // если микрофон активен — сначала останавливаем
+  if(isRec){ micStop(); }
+  // берём текст и отправляем
   const inp=document.getElementById('inp');
-  const t=inp.value.trim();if(!t||loading)return;
-  inp.value='';inp.style.height='auto';
-  addFounder(t);askReply();
+  const t=inp.value.trim();
+  if(!t) return;
+  inp.value=''; inp.style.height='auto';
+  addFounder(t); askReply();
 }
 
 async function askReply(){
@@ -299,71 +304,71 @@ function setQs(v){document.querySelectorAll('.qbtn').forEach(b=>b.disabled=v);}
 function scroll(){const c=document.getElementById('chat');setTimeout(()=>c.scrollTo({top:c.scrollHeight,behavior:'smooth'}),50);}
 function esc(t){return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');}
 
-// MICROPHONE — continuous mode, stops only on button press
+// MICROPHONE
 let recog=null,isRec=false,micFinal='';
+
 function toggleMic(){
   if(!('webkitSpeechRecognition' in window)&&!('SpeechRecognition' in window)){
-    alert('Голосовой ввод работает только в браузере Chrome.');return;
+    alert('Голосовой ввод работает только в Chrome.');return;
   }
-  if(isRec){
-    recog.stop();
-    return;
-  }
-  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-  recog=new SR();
-  recog.lang='ru-RU';
-  recog.continuous=true;
-  recog.interimResults=true;
-  micFinal='';
-  const mb=document.getElementById('mbtn'),inp=document.getElementById('inp');
-
-  recog.onstart=()=>{
-    isRec=true;
-    mb.classList.add('rec');
-    mb.textContent='🟢';mb.style.fontSize='18px';
-    mb.title='Нажми ⏹ чтобы остановить и отправить';
-    inp.placeholder='Говорите... нажмите ⏹ чтобы отправить';
-    inp.value='';
-  };
-
-  recog.onresult=(e)=>{
-    let interim='';
-    for(let i=e.resultIndex;i<e.results.length;i++){
-      if(e.results[i].isFinal){
-        micFinal+=e.results[i][0].transcript+' ';
-      } else {
-        interim+=e.results[i][0].transcript;
-      }
-    }
-    inp.value=(micFinal+interim).trim();
-    grow(inp);
-  };
-
-  recog.onend=()=>{
-    if(isRec){
-      // браузер остановил сам (таймаут) — перезапускаем
-      try{ recog.start(); }catch(e){ stopMic(); }
-      return;
-    }
-    stopMic();
-  };
-
-  recog.onerror=(e)=>{
-    if(e.error==='no-speech') return; // игнорируем паузы
-    stopMic();
-  };
-
-  recog.start();
+  if(isRec){ micStop(); doSend(); return; }
+  micStart();
 }
 
-function stopMic(){
+function micStart(){
+  try{
+    const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+    recog=new SR();
+    recog.lang='ru-RU';
+    recog.continuous=true;
+    recog.interimResults=true;
+    micFinal='';
+
+    recog.onstart=()=>{
+      isRec=true;
+      micUi(true);
+      document.getElementById('inp').value='';
+    };
+    recog.onresult=(e)=>{
+      let interim='';
+      for(let i=e.resultIndex;i<e.results.length;i++){
+        if(e.results[i].isFinal) micFinal+=e.results[i][0].transcript+' ';
+        else interim+=e.results[i][0].transcript;
+      }
+      const inp=document.getElementById('inp');
+      inp.value=(micFinal+interim).trim();
+      grow(inp);
+    };
+    recog.onend=()=>{
+      if(isRec){ try{ recog.start(); }catch(e){ isRec=false; micUi(false); } }
+    };
+    recog.onerror=(e)=>{
+      if(e.error==='no-speech'||e.error==='aborted') return;
+      isRec=false; micUi(false);
+    };
+    recog.start();
+  }catch(e){ alert('Ошибка микрофона: '+e.message); }
+}
+
+function micStop(){
   isRec=false;
-  const mb=document.getElementById('mbtn'),inp=document.getElementById('inp');
-  mb.classList.remove('rec');
-  mb.textContent='🎤';mb.style.fontSize='22px';
-  mb.title='Говорить голосом';
-  inp.placeholder='Ваш ответ инвестору...';
-  if(inp.value.trim()) send();
+  micUi(false);
+  try{ recog.stop(); }catch(e){}
+}
+
+function micUi(on){
+  const mb=document.getElementById('mbtn');
+  if(on){
+    mb.classList.add('rec');
+    mb.textContent='🟢'; mb.style.fontSize='18px';
+    mb.title='Нажми чтобы остановить и отправить';
+    document.getElementById('inp').placeholder='Говорите...';
+  } else {
+    mb.classList.remove('rec');
+    mb.textContent='🎤'; mb.style.fontSize='22px';
+    mb.title='Говорить голосом';
+    document.getElementById('inp').placeholder='Ваш ответ инвестору...';
+  }
 }
 
 // KEY SCREEN
