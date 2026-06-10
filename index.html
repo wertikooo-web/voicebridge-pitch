@@ -445,11 +445,17 @@ function askMentor(){
 - Главный инсайт: "Alexa даёт доступ к Amazon. VoiceBridge даёт маме доступ к тебе."
 
 Твоя задача: дай фаундеру конкретный готовый ответ на вопрос инвестора.
-Формат: 
-1. Одна фраза "Скажи вот так: ..." с готовым ответом
-2. Одна фраза почему это работает
+Формат СТРОГО такой:
+<<<готовый ответ фаундера, 1-2 предложения, от первого лица>>>
 
-Коротко, конкретно, по делу. Не больше 4 предложений.`;
+Потом 1 предложение — почему это работает.
+
+Пример:
+<<<WhatsApp слишком сложен для пожилых — нужно найти контакт, нажать кнопку. У нас одно касание и семья уже слышит друг друга.>>>
+
+Это работает потому что ты переводишь разговор с технологии на боль пользователя.
+
+Коротко и конкретно. Не начинай с "Скажи вот так".`;
 
   fetch('https://api.anthropic.com/v1/messages',{
     method:'POST',
@@ -484,10 +490,20 @@ function askMentor(){
 
 
 function getMentorText(msgId){
-  // берём текст из пузыря ментора, убираем HTML теги
   const el = document.getElementById(msgId);
   if(!el) return '';
-  return el.innerText || el.textContent || '';
+  const full = el.innerText || el.textContent || '';
+  // извлекаем только прямую речь между <<< >>>
+  const match = full.match(/<<<([\s\S]*?)>>>/);
+  if(match) return match[1].trim();
+  // fallback: убираем первое предложение-вступление если есть
+  const lines = full.split('\n').filter(l => l.trim());
+  // ищем строку с кавычками
+  for(const line of lines){
+    const q = line.match(/[«""](.+)[»""]/);
+    if(q) return q[1].trim();
+  }
+  return full.trim();
 }
 
 function mentorToField(msgId){
