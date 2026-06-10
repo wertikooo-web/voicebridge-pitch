@@ -290,21 +290,71 @@ function setQs(v){document.querySelectorAll('.qbtn').forEach(b=>b.disabled=v);}
 function scroll(){const c=document.getElementById('chat');setTimeout(()=>c.scrollTo({top:c.scrollHeight,behavior:'smooth'}),50);}
 function esc(t){return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');}
 
-// MICROPHONE
-let recog=null,isRec=false;
+// MICROPHONE — continuous mode, stops only on button press
+let recog=null,isRec=false,micFinal='';
 function toggleMic(){
   if(!('webkitSpeechRecognition' in window)&&!('SpeechRecognition' in window)){
     alert('Голосовой ввод работает только в Chrome.');return;
   }
-  if(isRec){recog.stop();return;}
+  if(isRec){
+    recog.stop();
+    return;
+  }
   const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-  recog=new SR();recog.lang='ru-RU';recog.continuous=false;recog.interimResults=true;
+  recog=new SR();
+  recog.lang='ru-RU';
+  recog.continuous=true;
+  recog.interimResults=true;
+  micFinal='';
   const mb=document.getElementById('mbtn'),inp=document.getElementById('inp');
-  recog.onstart=()=>{isRec=true;mb.classList.add('rec');mb.textContent='⏹';inp.placeholder='Говорите...';};
-  recog.onresult=(e)=>{let s='';for(let i=0;i<e.results.length;i++)s+=e.results[i][0].transcript;inp.value=s;grow(inp);};
-  recog.onend=()=>{isRec=false;mb.classList.remove('rec');mb.textContent='🎤';inp.placeholder='Ваш ответ инвестору...';if(inp.value.trim())send();};
-  recog.onerror=()=>{isRec=false;mb.classList.remove('rec');mb.textContent='🎤';inp.placeholder='Ваш ответ инвестору...';};
+
+  recog.onstart=()=>{
+    isRec=true;
+    mb.classList.add('rec');
+    mb.textContent='⏹';
+    mb.title='Нажми чтобы остановить';
+    inp.placeholder='Говорите... (нажмите ⏹ чтобы закончить)';
+    inp.value='';
+  };
+
+  recog.onresult=(e)=>{
+    let interim='';
+    for(let i=e.resultIndex;i<e.results.length;i++){
+      if(e.results[i].isFinal){
+        micFinal+=e.results[i][0].transcript+' ';
+      } else {
+        interim+=e.results[i][0].transcript;
+      }
+    }
+    inp.value=(micFinal+interim).trim();
+    grow(inp);
+  };
+
+  recog.onend=()=>{
+    if(isRec){
+      // браузер остановил сам (таймаут) — перезапускаем
+      try{ recog.start(); }catch(e){ stopMic(); }
+      return;
+    }
+    stopMic();
+  };
+
+  recog.onerror=(e)=>{
+    if(e.error==='no-speech') return; // игнорируем паузы
+    stopMic();
+  };
+
   recog.start();
+}
+
+function stopMic(){
+  isRec=false;
+  const mb=document.getElementById('mbtn'),inp=document.getElementById('inp');
+  mb.classList.remove('rec');
+  mb.textContent='🎤';
+  mb.title='Говорить голосом';
+  inp.placeholder='Ваш ответ инвестору...';
+  if(inp.value.trim()) send();
 }
 
 // KEY SCREEN
