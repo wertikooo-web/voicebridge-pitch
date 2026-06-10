@@ -83,6 +83,11 @@ textarea:disabled{opacity:0.4}
 .sbtn{padding:0 24px;height:52px;background:#111111;color:#ffffff;border:2px solid #111111;border-radius:4px;font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:600;letter-spacing:2px;cursor:pointer;white-space:nowrap;transition:all 0.15s;display:flex;align-items:center;gap:8px}
 .sbtn:hover{background:#333333}
 .sbtn:disabled{opacity:0.4;cursor:not-allowed}
+.mentor-btn{padding:0 16px;height:52px;background:#166534;color:#fff;border:2px solid #166534;border-radius:4px;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;letter-spacing:1px;cursor:pointer;white-space:nowrap;transition:all 0.15s;display:flex;align-items:center;gap:6px}
+.mentor-btn:hover{background:#15803d}
+.mentor-btn:disabled{opacity:0.4;cursor:not-allowed}
+.bubble.mentor-tip{background:#f0fdf4;border:2px solid #166534;border-left:5px solid #4ade80;color:#14532d;font-style:italic}
+.mentor-label{font-size:11px;font-weight:700;letter-spacing:1px;color:#166534;text-transform:uppercase}
 .spin{width:14px;height:14px;border:2px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;animation:spin 0.7s linear infinite;display:none}
 @keyframes spin{to{transform:rotate(360deg)}}
 
@@ -149,6 +154,7 @@ textarea:disabled{opacity:0.4}
   <footer>
     <button class="mic-btn" id="mbtn" onclick="toggleMic()" title="Говорить голосом">🎤</button>
     <textarea id="inp" placeholder="Ваш ответ инвестору..." rows="1" onkeydown="onKey(event)" oninput="grow(this)"></textarea>
+    <button class="mentor-btn" id="mbtn2" onclick="askMentor()" title="Ментор ответит на последний вопрос">🌱 МЕНТОР</button>
     <button class="sbtn" id="sbtn" onclick="doSend()">
       <div class="spin" id="spin"></div>
       <span id="slbl">ОТПРАВИТЬ</span>
@@ -159,12 +165,14 @@ textarea:disabled{opacity:0.4}
 <script>
 
 const AVATARS = {
+  4: `<svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg"><circle cx="16" cy="16" r="16" fill="#1a3a1a"/><circle cx="16" cy="12" r="5" fill="#fff"/><path d="M6 28c0-5.5 4.5-10 10-10s10 4.5 10 10" fill="#fff"/><circle cx="24" cy="8" r="4" fill="#4ade80"/><text x="24" y="11" text-anchor="middle" font-size="5" fill="#000" font-weight="bold">★</text></svg>`,
   0: `<svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg"><circle cx="16" cy="16" r="16" fill="#222"/><circle cx="16" cy="12" r="5" fill="#fff"/><path d="M6 28c0-5.5 4.5-10 10-10s10 4.5 10 10" fill="#fff"/></svg>`,
   1: `<svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg"><circle cx="16" cy="16" r="16" fill="#444"/><circle cx="16" cy="12" r="5" fill="#fff"/><path d="M6 28c0-5.5 4.5-10 10-10s10 4.5 10 10" fill="#fff"/><path d="M10 19 Q16 23 22 19" stroke="#fff" stroke-width="1.5" fill="none"/></svg>`,
   2: `<svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg"><circle cx="16" cy="16" r="16" fill="#222"/><circle cx="16" cy="12" r="5" fill="#fff"/><path d="M6 28c0-5.5 4.5-10 10-10s10 4.5 10 10" fill="#fff"/></svg>`,
   3: `<svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg"><circle cx="16" cy="16" r="16" fill="#444"/><circle cx="16" cy="12" r="5" fill="#fff"/><path d="M6 28c0-5.5 4.5-10 10-10s10 4.5 10 10" fill="#fff"/><path d="M10 19 Q16 23 22 19" stroke="#fff" stroke-width="1.5" fill="none"/></svg>`
 };
 const AVATARS_LG = {
+  4: `<svg width="64" height="64" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg"><circle cx="16" cy="16" r="16" fill="#1a3a1a"/><circle cx="16" cy="12" r="5" fill="#fff"/><path d="M6 28c0-5.5 4.5-10 10-10s10 4.5 10 10" fill="#fff"/><circle cx="24" cy="8" r="4" fill="#4ade80"/><text x="24" y="11" text-anchor="middle" font-size="5" fill="#000" font-weight="bold">★</text></svg>`,
   0: `<svg width="64" height="64" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg"><circle cx="16" cy="16" r="16" fill="#222"/><circle cx="16" cy="12" r="5" fill="#fff"/><path d="M6 28c0-5.5 4.5-10 10-10s10 4.5 10 10" fill="#fff"/></svg>`,
   1: `<svg width="64" height="64" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg"><circle cx="16" cy="16" r="16" fill="#444"/><circle cx="16" cy="12" r="5" fill="#fff"/><path d="M6 28c0-5.5 4.5-10 10-10s10 4.5 10 10" fill="#fff"/><path d="M10 19 Q16 23 22 19" stroke="#fff" stroke-width="1.5" fill="none"/></svg>`,
   2: `<svg width="64" height="64" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg"><circle cx="16" cy="16" r="16" fill="#222"/><circle cx="16" cy="12" r="5" fill="#fff"/><path d="M6 28c0-5.5 4.5-10 10-10s10 4.5 10 10" fill="#fff"/></svg>`,
@@ -190,7 +198,12 @@ const INVS=[
    bio:'«Технологии должны возвращать людей друг к другу. Как вы измеряете реальное влияние?»',
    style:'impact-инвестор. Спрашивает про реальный эффект, доступность, истории пользователей.',
    open:'Расскажите мне одну реальную историю. Не про технологию — про человека, которому это помогло.',
-   qs:['Как вы измеряете счастье пользователей?','Что происходит с пожилым, у которого нет детей?','Как сделать устройство доступным для бедных семей?','Как вы предотвращаете зависимость от устройства?']}
+   qs:['Как вы измеряете счастье пользователей?','Что происходит с пожилым, у которого нет детей?','Как сделать устройство доступным для бедных семей?','Как вы предотвращаете зависимость от устройства?']},
+  {emoji:'🌱',name:'Сергей Наставник',role:'MENTOR · STARTUP ADVISOR',
+   bio:'«Я здесь чтобы помочь тебе найти лучшие слова для твоей идеи. Давай вместе разберём что работает.»',
+   style:'опытный ментор и советник стартапов. НЕ критикует — помогает. Находит сильные стороны в каждом ответе. Задаёт наводящие вопросы которые помогают фаундеру лучше сформулировать мысль. Говорит "это хорошо, потому что..." и "попробуй добавить...". Всегда поддерживает и мотивирует. Помогает найти убедительные аргументы и сильные формулировки.',
+   open:'Привет! Я здесь чтобы помочь тебе отточить питч, а не критиковать. Расскажи про VoiceBridge своими словами — и я помогу найти самые сильные аргументы.',
+   qs:['Как мне лучше объяснить почему это не Alexa?','Помоги сформулировать главное преимущество','Как ответить на вопрос про масштабирование?','Что самое убедительное в нашей бизнес-модели?']}
 ];
 
 let cur=0,hist=[],loading=false,sc={a:0,b:0,c:0};
@@ -228,6 +241,7 @@ function addInv(text, addToHist=true){
   d.innerHTML='<div class="mh"><div class="mava" style="background:none;border:none;">'+AVATARS[cur]+'</div><div class="mname">'+v.name.split(' ')[0]+'</div></div><div class="bubble inv">'+esc(text)+'</div>';
   c.appendChild(d);
   if(addToHist) hist.push({role:'assistant',content:text});
+  lastInvQuestion = text; // запоминаем последний вопрос инвестора
   scroll();
 }
 
@@ -405,6 +419,97 @@ function saveKey(){
   init();
 }
 function init(){renderQs();setQs(false);setTimeout(()=>addInv(INVS[0].open, false),600);}
+
+
+// MENTOR ADVICE
+let lastInvQuestion = '';
+
+function askMentor(){
+  if(loading) return;
+  if(!lastInvQuestion){ 
+    alert('Сначала выбери вопрос инвестора или дождись его вопроса.'); 
+    return; 
+  }
+  const mb2 = document.getElementById('mbtn2');
+  mb2.disabled = true;
+  mb2.textContent = '💭 Думает...';
+
+  const sys = `Ты — Сергей, опытный ментор стартапов. Фаундер только что получил вопрос от инвестора и просит совета.
+
+Контекст о VoiceBridge:
+- Устройство голосовой связи: пожилые родители ↔ взрослые дети
+- ESP32-S3, WebSocket, push-to-talk, задержка < 1 сек, без экрана
+- B2C €250 + €20/мес; B2B лицензирование
+- Рынок: Румыния 3.4 млн пожилых, 1.2 млн диаспора за рубежом
+- Lunara AI: ИИ-компаньон (двойное касание)
+- Главный инсайт: "Alexa даёт доступ к Amazon. VoiceBridge даёт маме доступ к тебе."
+
+Твоя задача: дай фаундеру конкретный готовый ответ на вопрос инвестора.
+Формат: 
+1. Одна фраза "Скажи вот так: ..." с готовым ответом
+2. Одна фраза почему это работает
+
+Коротко, конкретно, по делу. Не больше 4 предложений.`;
+
+  fetch('https://api.anthropic.com/v1/messages',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','x-api-key':localStorage.getItem('vb_key')||'','anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+    body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:400,system:sys,
+      messages:[{role:'user',content:'Вопрос инвестора: "'+lastInvQuestion+'"'}]})
+  })
+  .then(r=>r.json())
+  .then(data=>{
+    const reply = data.content?.[0]?.text || 'Не удалось получить совет.';
+    const chat = document.getElementById('chat');
+    const msgId = 'mentor-' + Date.now();
+    const d = document.createElement('div');
+    d.className = 'msg';
+    d.innerHTML = `
+      <div class="mh"><div class="mava" style="background:#166534;border:none;color:#fff;font-size:14px">🌱</div><div class="mentor-label">Сергей · Ментор</div></div>
+      <div class="bubble mentor-tip" id="${msgId}">${esc(reply)}</div>
+      <div style="display:flex;gap:8px;margin-top:6px">
+        <button onclick="mentorToField('${msgId}')" style="padding:6px 12px;border:1.5px solid #166534;background:#fff;color:#166534;border-radius:4px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif" onmouseover="this.style.background='#f0fdf4'" onmouseout="this.style.background='#fff'">✏️ Вставить в поле</button>
+        <button onclick="mentorSend('${msgId}')" style="padding:6px 12px;border:1.5px solid #166534;background:#166534;color:#fff;border-radius:4px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif" onmouseover="this.style.background='#15803d'" onmouseout="this.style.background='#166534'">🌱 Ответить от ментора</button>
+      </div>`;
+    chat.appendChild(d);
+    scroll();
+    mb2.disabled = false;
+    mb2.textContent = '🌱 МЕНТОР';
+  })
+  .catch(()=>{
+    mb2.disabled = false;
+    mb2.textContent = '🌱 МЕНТОР';
+  });
+}
+
+
+function getMentorText(msgId){
+  // берём текст из пузыря ментора, убираем HTML теги
+  const el = document.getElementById(msgId);
+  if(!el) return '';
+  return el.innerText || el.textContent || '';
+}
+
+function mentorToField(msgId){
+  const t = getMentorText(msgId);
+  const inp = document.getElementById('inp');
+  inp.value = t;
+  grow(inp);
+  inp.focus();
+  // ставим курсор в конец
+  inp.setSelectionRange(inp.value.length, inp.value.length);
+}
+
+function mentorSend(msgId){
+  const t = getMentorText(msgId);
+  if(!t || loading) return;
+  // очищаем поле если что-то есть
+  const inp = document.getElementById('inp');
+  inp.value = ''; inp.style.height = 'auto';
+  // отправляем от имени фаундера
+  addFounder(t);
+  askReply();
+}
 
 function endSession(){
   if(!confirm('Завершить питч-сессию?')) return;
