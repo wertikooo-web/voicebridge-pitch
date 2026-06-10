@@ -203,7 +203,7 @@ function renderQs(){
   INVS[cur].qs.forEach(q=>{
     const btn=document.createElement('button');
     btn.className='qbtn';btn.textContent=q;
-    btn.onclick=()=>{if(!loading){addInv(q, true);}};
+    btn.onclick=()=>{if(!loading){addInv(q, false);}};
     b.appendChild(btn);
   });
 }
@@ -258,7 +258,7 @@ async function askReply(){
     addInv(reply, true);
   }catch(e){
     document.getElementById('typing')?.remove();
-    addInv('Ошибка соединения. Проверьте API ключ и попробуйте снова.');
+    addInv('Ошибка соединения. Проверьте API ключ и попробуйте снова.', false);
   }
   setLoad(false);
 }
