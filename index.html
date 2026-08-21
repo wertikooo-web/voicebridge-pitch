@@ -51,4 +51,42 @@ function endSession(){if(!confirm('Завершить питч-сессию?'))r
 function init(){render();reset();setTimeout(()=>addInv(I[0].open,false),300)}
 setInterval(()=>{const s=Math.floor((Date.now()-t0)/1000),el=document.getElementById('stimer');if(el)el.textContent=String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0')},1000);
 if(!localStorage.getItem('vb_key'))showKey(false);else init();
-</script></body></html>
+</script>
+<script>
+/* VB_END_SESSION_HOTFIX_V1 */
+document.addEventListener('click', function(event) {
+  const btn = event.target.closest('.end');
+  if (!btn) return;
+  event.preventDefault();
+  event.stopImmediatePropagation();
+  try {
+    if (typeof recording !== 'undefined' && recording && typeof stopMic === 'function') stopMic();
+    if (typeof upScore === 'function') upScore();
+    const a = Math.round((typeof sc !== 'undefined' && sc.a) || 0);
+    const b = Math.round((typeof sc !== 'undefined' && sc.b) || 0);
+    const c = Math.round((typeof sc !== 'undefined' && sc.c) || 0);
+    const avg = Math.round((a + b + c) / 3);
+    const grade = avg >= 80 ? 'Отлично' : avg >= 60 ? 'Хорошо' : avg >= 40 ? 'Есть база' : 'Нужна практика';
+    const chatEl = document.getElementById('chat');
+    if (!chatEl) throw new Error('chat element not found');
+    chatEl.innerHTML = '<div class="result"><h2>' + grade + '</h2>' +
+      '<div class="rgrid">' +
+      '<div class="rch"><b>' + a + '</b><small>Убедительность</small></div>' +
+      '<div class="rch"><b>' + b + '</b><small>Конкретность</small></div>' +
+      '<div class="rch"><b>' + c + '</b><small>Уверенность</small></div>' +
+      '</div><p style="color:#91a4bb;font-size:14px">Средний балл: <b style="color:white">' + avg + '/100</b></p>' +
+      '<button class="start" style="max-width:220px" onclick="location.reload()">НОВАЯ СЕССИЯ</button></div>';
+    const inpEl = document.getElementById('inp');
+    if (inpEl) inpEl.disabled = true;
+    document.querySelectorAll('.q').forEach(function(x){ x.disabled = true; });
+    const mentorEl = document.getElementById('mentorBtn');
+    if (mentorEl) mentorEl.disabled = true;
+    chatEl.scrollTop = 0;
+  } catch (err) {
+    console.error('End session hotfix failed', err);
+    alert('Не удалось завершить сессию. Обновите страницу и попробуйте снова.');
+  }
+}, true);
+</script>
+
+</body></html>
