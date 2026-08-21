@@ -1,0 +1,76 @@
+name: Fix end session button
+
+on:
+  push:
+    paths:
+      - '.github/workflows/fix-end-session.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch end session handler
+        shell: python
+        run: |
+          from pathlib import Path
+          p = Path('index.html')
+          s = p.read_text(encoding='utf-8')
+          marker = 'VB_END_SESSION_HOTFIX_V1'
+          if marker in s:
+              print('Hotfix already present')
+              raise SystemExit(0)
+          hotfix = r'''
+          <script>
+          /* VB_END_SESSION_HOTFIX_V1 */
+          document.addEventListener('click', function(event) {
+            const btn = event.target.closest('.end');
+            if (!btn) return;
+            event.preventDefault();
+            event.stopImmediatePropagation();
+            try {
+              if (typeof recording !== 'undefined' && recording && typeof stopMic === 'function') stopMic();
+              if (typeof upScore === 'function') upScore();
+              const a = Math.round((typeof sc !== 'undefined' && sc.a) || 0);
+              const b = Math.round((typeof sc !== 'undefined' && sc.b) || 0);
+              const c = Math.round((typeof sc !== 'undefined' && sc.c) || 0);
+              const avg = Math.round((a + b + c) / 3);
+              const grade = avg >= 80 ? 'Отлично' : avg >= 60 ? 'Хорошо' : avg >= 40 ? 'Есть база' : 'Нужна практика';
+              const chatEl = document.getElementById('chat');
+              if (!chatEl) throw new Error('chat element not found');
+              chatEl.innerHTML = '<div class="result"><h2>' + grade + '</h2>' +
+                '<div class="rgrid">' +
+                '<div class="rch"><b>' + a + '</b><small>Убедительность</small></div>' +
+                '<div class="rch"><b>' + b + '</b><small>Конкретность</small></div>' +
+                '<div class="rch"><b>' + c + '</b><small>Уверенность</small></div>' +
+                '</div><p style="color:#91a4bb;font-size:14px">Средний балл: <b style="color:white">' + avg + '/100</b></p>' +
+                '<button class="start" style="max-width:220px" onclick="location.reload()">НОВАЯ СЕССИЯ</button></div>';
+              const inpEl = document.getElementById('inp');
+              if (inpEl) inpEl.disabled = true;
+              document.querySelectorAll('.q').forEach(function(x){ x.disabled = true; });
+              const mentorEl = document.getElementById('mentorBtn');
+              if (mentorEl) mentorEl.disabled = true;
+              chatEl.scrollTop = 0;
+            } catch (err) {
+              console.error('End session hotfix failed', err);
+              alert('Не удалось завершить сессию. Обновите страницу и попробуйте снова.');
+            }
+          }, true);
+          </script>
+          '''
+          s = s.replace('</body>', hotfix + '\n</body>')
+          p.write_text(s, encoding='utf-8')
+      - name: Commit hotfix
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          if git diff --cached --quiet; then
+            echo "No changes"
+          else
+            git commit -m "fix: make end session button reliable"
+            git push
+          fi
